@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <clipPath id="lens"><circle cx="256" cy="256" r="118"/></clipPath>
+  </defs>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#FFCC00" stroke-width="22"/>
+  <circle cx="256" cy="256" r="118" fill="#1C1C1E"/>
+  <circle cx="256" cy="256" r="72" fill="#FFCC00"/>
+  <circle cx="256" cy="256" r="40" fill="#1C1C1E"/>
+  <circle cx="226" cy="222" r="14" fill="#FFFFFF" opacity="0.9" clip-path="url(#lens)"/>
+  <g fill="#FFCC00">
+    <path d="M256 44 L294 92 H218 Z"/>
+    <path d="M256 468 L218 420 H294 Z"/>
+    <path d="M44 256 L92 218 V294 Z"/>
+    <path d="M468 256 L420 294 V218 Z"/>
+  </g>
+</svg>
