@@ -66,26 +66,33 @@ function mediaDeviceFor(videoInputs, selectedPath) {
   return fallback
 }
 
-function previewFormat(device, targetWidth, targetHeight) {
+function previewFormat(device, configuredResolution) {
   var formats = device && device.videoFormats ? device.videoFormats : []
   if (!formats || formats.length === 0) return null
 
-  var wantedWidth = asNumber(targetWidth, 1280)
-  var wantedHeight = asNumber(targetHeight, 720)
-  var wantedAspect = wantedWidth / wantedHeight
-  var best = formats[0]
+  var configured = configuredResolution || {}
+  var wantedWidth = asNumber(configured.width, 0)
+  var wantedHeight = asNumber(configured.height, 0)
+  var wantedFps = asNumber(configured.fps, 0)
+  if (wantedWidth <= 0 || wantedHeight <= 0) return null
+
+  var best = null
   var bestScore = Number.POSITIVE_INFINITY
 
   for (var i = 0; i < formats.length; i++) {
     var format = formats[i]
     var width = asNumber(format.resolution.width, 0)
     var height = asNumber(format.resolution.height, 0)
-    if (width <= 0 || height <= 0) continue
+    if (width !== wantedWidth || height !== wantedHeight) continue
 
-    var aspectPenalty = Math.abs(width / height - wantedAspect) * 10000
-    var sizePenalty = Math.abs(width - wantedWidth) + Math.abs(height - wantedHeight)
-    var oversizePenalty = width > wantedWidth || height > wantedHeight ? 20000 : 0
-    var score = aspectPenalty + sizePenalty + oversizePenalty
+    if (wantedFps <= 0) return format
+    var minimumFps = asNumber(format.minFrameRate, 0)
+    var maximumFps = asNumber(format.maxFrameRate, 0)
+    var includesFps = wantedFps >= minimumFps - 0.01
+      && wantedFps <= maximumFps + 0.01
+    var score = Math.min(Math.abs(wantedFps - minimumFps),
+                         Math.abs(wantedFps - maximumFps))
+      + (includesFps ? 0 : 10000)
     if (score < bestScore) {
       best = format
       bestScore = score

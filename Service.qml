@@ -49,6 +49,7 @@ Item {
   readonly property int moveStepDegrees: settingInt("moveStepDegrees", 5, 1, 45)
 
   signal actionFinished(string kind, bool ok)
+  signal snapshotFinished(bool ok)
 
   function settingValue(name, fallback) {
     var value = settings ? settings[name] : undefined
@@ -266,6 +267,7 @@ Item {
       root._applySnapshot(payload)
       if (!payload && exitCode !== 0)
         root.snapshotError = "Could not run the linkctl bridge"
+      root.snapshotFinished(payload !== null)
       if (root._actionQueue.length > 0) Qt.callLater(root._startNextAction)
     }
   }
@@ -290,6 +292,9 @@ Item {
       var kind = root.currentAction
       var payload = root._payload(root._actionOutput, root._actionErrorOutput)
       var ok = payload && payload.ok === true && exitCode === 0
+      if (ok && kind === "resolution" && payload.payload
+          && typeof payload.payload === "object")
+        root.resolution = payload.payload
       root.actionStatus = ""
       root.lastError = ok ? "" : root._cleanError(
         payload ? payload.error : root._actionErrorOutput,

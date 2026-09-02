@@ -23,6 +23,7 @@ Panel {
 
   property bool previewWanted: true
   property bool previewSuspended: false
+  property bool previewReady: false
   property var pendingResolution: null
   property bool previewDragging: false
   property bool previewMoveDirty: false
@@ -30,7 +31,8 @@ Panel {
   property real previewTargetTilt: 0
 
   readonly property bool previewShouldRun: opened && previewWanted
-    && !previewSuspended && backend.installed && backend.cameraFound
+    && previewReady && !previewSuspended
+    && backend.installed && backend.cameraFound
   readonly property bool previewRunning: previewLoader.item
     ? previewLoader.item.active === true : false
   readonly property string previewError: previewLoader.item
@@ -57,6 +59,7 @@ Panel {
     if (!backend.cameraFound) return "Connect an Insta360 Link camera"
     if (!previewWanted) return "Preview paused"
     if (previewSuspended) return "Applying video format"
+    if (!previewReady) return "Checking camera format"
     if (previewError !== "") return previewError
     if (!previewRunning) return "Starting preview"
     return ""
@@ -134,14 +137,15 @@ Panel {
   }
 
   function selectDevice(path) {
-    previewSuspended = true
+    previewReady = false
+    previewSuspended = false
     backend.selectDevice(path)
-    previewRestartTimer.restart()
   }
 
   function resetPanel() {
     previewWanted = backend.settingBool("previewEnabled", true)
     previewSuspended = false
+    previewReady = false
     pendingResolution = null
     if (panelFlick) panelFlick.contentY = 0
   }
@@ -154,6 +158,7 @@ Panel {
       Qt.callLater(function() { keyCatcher.forceActiveFocus() })
     } else {
       previewSuspended = false
+      previewReady = false
       pendingResolution = null
       previewDragging = false
       previewMoveDirty = false
@@ -170,6 +175,9 @@ Panel {
 
   Connections {
     target: backend
+    function onSnapshotFinished(ok) {
+      if (root.opened) root.previewReady = ok
+    }
     function onActionFinished(kind, ok) {
       if (kind === "resolution") previewRestartTimer.restart()
       if (kind === "install" && ok) backend.refresh()
@@ -234,6 +242,7 @@ Panel {
         opened: root.opened,
         previewWanted: root.previewWanted,
         previewSuspended: root.previewSuspended,
+        previewReady: root.previewReady,
         previewShouldRun: root.previewShouldRun,
         previewActive: root.previewRunning,
         previewFormat: previewLoader.item
@@ -318,6 +327,9 @@ Panel {
               source: Qt.resolvedUrl("Preview.qml")
               onLoaded: {
                 item.devicePath = Qt.binding(function() { return backend.selectedDevice })
+                item.configuredResolution = Qt.binding(function() {
+                  return backend.resolution
+                })
                 item.running = Qt.binding(function() { return root.previewShouldRun })
               }
             }

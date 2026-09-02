@@ -69,7 +69,7 @@ Natural preview dragging is disabled while AI tracking is active so the two cont
 
 The preview is rendered directly by Qt Multimedia. It does not require ffplay or mpv and is created only while the panel is open, so the camera is released as soon as the panel closes.
 
-The plugin selects a lightweight 1280 x 720 camera format for the embedded preview when available. Changing the configured camera output format briefly pauses and restarts the preview.
+The embedded preview uses the resolution and frame rate currently reported by `linkctl`; it does not apply a separate lightweight format. Changing the configured camera output format briefly pauses and restarts the preview with the new values.
 
 ## linkctl setup
 

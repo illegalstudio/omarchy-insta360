@@ -6,10 +6,12 @@ Item {
   id: root
 
   property string devicePath: ""
+  property var configuredResolution: ({})
   property bool running: false
   readonly property var mediaDevice: Model.mediaDeviceFor(
     mediaDevices.videoInputs, devicePath)
-  readonly property var selectedFormat: Model.previewFormat(mediaDevice, 1280, 720)
+  readonly property var selectedFormat: Model.previewFormat(
+    mediaDevice, configuredResolution)
   readonly property bool deviceAvailable: mediaDevice !== null
   readonly property bool active: previewCamera.active
   readonly property string errorString: previewCamera.errorString
