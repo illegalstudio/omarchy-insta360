@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "illegalstudio.omarchy-insta360",
+  "name": "Insta360 Link",
+  "version": "0.1.0",
+  "author": "illegalstudio",
+  "license": "MIT",
+  "description": "Native Insta360 Link preview and camera controls in the Omarchy bar, powered by linkctl.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Insta360 Link",
+    "description": "Live preview with drag control, pan, tilt, zoom, tracking, image controls, video format, and framing presets.",
+    "category": "Hardware",
+    "aliases": [
+      "insta360",
+      "webcam",
+      "camera",
+      "ptz"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "autoInstallLinkctl": true,
+      "previewEnabled": true,
+      "moveStepDegrees": 5,
+      "refreshIntervalSec": 10
+    },
+    "schema": [
+      {
+        "key": "autoInstallLinkctl",
+        "type": "boolean",
+        "label": "Install linkctl automatically",
+        "defaultValue": true,
+        "description": "When linkctl is missing, install the latest release globally with mise when the panel opens."
+      },
+      {
+        "key": "previewEnabled",
+        "type": "boolean",
+        "label": "Start the embedded preview",
+        "defaultValue": true
+      },
+      {
+        "key": "moveStepDegrees",
+        "type": "integer",
+        "label": "Pan and tilt step in degrees",
+        "min": 1,
+        "max": 45,
+        "step": 1,
+        "defaultValue": 5
+      },
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval in seconds",
+        "min": 2,
+        "max": 60,
+        "step": 1,
+        "defaultValue": 10
+      }
+    ]
+  }
+}
