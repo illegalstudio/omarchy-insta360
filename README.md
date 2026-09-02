@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://github.com/illegalstudio/omarchy-insta360/stargazers"><img src="https://img.shields.io/github/stars/illegalstudio/omarchy-insta360?style=flat-square&logo=github&logoColor=white&label=stars&color=FFCC00" alt="Stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/illegalstudio/omarchy-insta360?style=flat-square&color=FFCC00" alt="License: MIT"></a>
+  <a href="https://omarchy.org"><img src="https://img.shields.io/badge/Omarchy-4.x-FFCC00?style=flat-square" alt="Omarchy 4.x"></a>
   <a href="https://x.com/nahime0"><img src="https://img.shields.io/badge/Follow-%40nahime0-FFCC00?style=flat-square&logo=x&logoColor=white" alt="Follow @nahime0 on X"></a>
 </p>
 
