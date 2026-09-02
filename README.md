@@ -41,6 +41,15 @@ The widget is placed in the right section of the bar by default. Move an existin
 omarchy bar move illegalstudio.omarchy-insta360 --section right
 ```
 
+## Remove
+
+```bash
+omarchy plugin disable illegalstudio.omarchy-insta360
+omarchy plugin remove illegalstudio.omarchy-insta360
+```
+
+Removing the plugin does not remove `linkctl`. If the plugin installed it through mise and you no longer need it, remove it separately with `mise unuse -g github:illegalstudio/linkctl`.
+
 ## Using the widget
 
 Click the camera icon in the bar to open the panel. The live preview stays fixed at the top while the controls scroll underneath it.
@@ -66,13 +75,13 @@ The plugin selects a lightweight 1280 x 720 camera format for the embedded previ
 
 Every camera operation goes through [linkctl](https://github.com/illegalstudio/linkctl). The plugin searches `PATH`, mise, and the standard mise installation directory.
 
-When `linkctl` is missing and mise is available, the panel can install the latest release automatically with:
+When `linkctl` is missing and mise is available, the panel offers an explicit installation button that runs:
 
 ```bash
 mise use -g github:illegalstudio/linkctl@latest
 ```
 
-If automatic installation is disabled or unavailable, install `linkctl` manually before opening the panel.
+Automatic installation on panel open is available as an opt-in setting and is disabled by default. If mise is unavailable, install `linkctl` manually before opening the panel.
 
 ## Requirements
 
@@ -87,7 +96,7 @@ Widget settings are stored by Omarchy in `~/.config/omarchy/shell.json`.
 
 | Setting | Default | Purpose |
 | --- | ---: | --- |
-| `autoInstallLinkctl` | `true` | Install `linkctl` through mise when it is missing. |
+| `autoInstallLinkctl` | `false` | After explicit opt-in, install `linkctl` through mise when it is missing. |
 | `previewEnabled` | `true` | Start the embedded preview when the panel opens. |
 | `moveStepDegrees` | `5` | Degrees moved by the directional buttons and keyboard shortcuts. |
 | `refreshIntervalSec` | `10` | Interval for background camera state refreshes. |

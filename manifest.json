@@ -25,7 +25,7 @@
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
-      "autoInstallLinkctl": true,
+      "autoInstallLinkctl": false,
       "previewEnabled": true,
       "moveStepDegrees": 5,
       "refreshIntervalSec": 10
@@ -35,8 +35,8 @@
         "key": "autoInstallLinkctl",
         "type": "boolean",
         "label": "Install linkctl automatically",
-        "defaultValue": true,
-        "description": "When linkctl is missing, install the latest release globally with mise when the panel opens."
+        "defaultValue": false,
+        "description": "When explicitly enabled, install the latest release globally with mise when the panel opens."
       },
       {
         "key": "previewEnabled",

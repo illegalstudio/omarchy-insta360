@@ -44,7 +44,7 @@ Item {
   readonly property string cameraState: status && status.state ? String(status.state) : "inactive"
   readonly property bool active: cameraState === "active"
   readonly property bool trackingEnabled: tracking && tracking.tracking === true
-  readonly property bool autoInstallLinkctl: settingBool("autoInstallLinkctl", true)
+  readonly property bool autoInstallLinkctl: settingBool("autoInstallLinkctl", false)
   readonly property int refreshIntervalSec: settingInt("refreshIntervalSec", 10, 2, 60)
   readonly property int moveStepDegrees: settingInt("moveStepDegrees", 5, 1, 45)
 
