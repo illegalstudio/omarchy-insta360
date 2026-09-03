@@ -122,11 +122,10 @@ When the panel has focus:
 
 ## Development install
 
-Clone the repository and expose it through the user plugin directory. Do not modify the packaged Omarchy files under `/usr/share/omarchy`.
+From an existing local checkout, expose the repository through the user plugin directory. Do not modify the packaged Omarchy files under `/usr/share/omarchy`.
 
 ```bash
-git clone https://github.com/illegalstudio/omarchy-insta360.git
-ln -s "$PWD/omarchy-insta360" "$HOME/.config/omarchy/plugins/illegalstudio.omarchy-insta360"
+ln -s "$PWD" "$HOME/.config/omarchy/plugins/illegalstudio.omarchy-insta360"
 omarchy plugin enable illegalstudio.omarchy-insta360 --section right
 ```
 
