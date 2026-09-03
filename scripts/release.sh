@@ -45,20 +45,29 @@ if [[ -z "$branch" ]]; then
   exit 1
 fi
 
-git fetch --quiet --tags origin
-
 upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)"
 if [[ -z "$upstream" ]]; then
   echo "error: branch '$branch' has no upstream" >&2
   exit 1
 fi
 
+if [[ "$upstream" != origin/* ]]; then
+  echo "error: branch '$branch' must track an origin branch" >&2
+  exit 1
+fi
+
+remote_branch="${upstream#origin/}"
 local_commit="$(git rev-parse HEAD)"
-upstream_commit="$(git rev-parse "$upstream")"
-if [[ "$local_commit" != "$upstream_commit" ]]; then
-  counts="$(git rev-list --left-right --count "$upstream...HEAD")"
+remote_commit="$(git ls-remote --heads origin "refs/heads/${remote_branch}" | awk 'NR == 1 { print $1 }')"
+if [[ -z "$remote_commit" ]]; then
+  echo "error: remote branch 'origin/$remote_branch' was not found" >&2
+  exit 1
+fi
+
+if [[ "$local_commit" != "$remote_commit" ]]; then
   echo "error: branch '$branch' must match '$upstream' before releasing" >&2
-  echo "  behind/ahead: $counts" >&2
+  echo "  local:  $local_commit" >&2
+  echo "  remote: $remote_commit" >&2
   exit 1
 fi
 
@@ -82,7 +91,13 @@ while IFS= read -r candidate; do
     latest="$candidate"
     break
   fi
-done < <(git tag --list 'v*' --sort=-version:refname)
+done < <(
+  {
+    git tag --list 'v*'
+    git ls-remote --tags --refs origin 'refs/tags/v*' \
+      | awk '{ sub("refs/tags/", "", $2); print $2 }'
+  } | sort -uVr
+)
 
 if [[ -z "$latest" ]]; then
   proposed="v${manifest_version}"
@@ -131,6 +146,11 @@ fi
 
 if git rev-parse -q --verify "refs/tags/${version}" >/dev/null; then
   echo "error: tag '$version' already exists" >&2
+  exit 1
+fi
+
+if git ls-remote --exit-code --tags origin "refs/tags/${version}" >/dev/null 2>&1; then
+  echo "error: tag '$version' already exists on origin" >&2
   exit 1
 fi
 
