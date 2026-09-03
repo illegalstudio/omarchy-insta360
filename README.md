@@ -133,9 +133,20 @@ omarchy plugin enable illegalstudio.omarchy-insta360 --section right
 Validate the manifest and run the bridge tests with:
 
 ```bash
-omarchy plugin validate .
-python3 -m unittest discover -s tests -v
+make check
 ```
+
+## Release
+
+Create a release from a clean branch that is synchronized with its upstream:
+
+```bash
+make release
+```
+
+The interactive command reads the latest semantic version tag, proposes the next patch version, and accepts a custom `MAJOR.MINOR.PATCH` value. After confirmation it updates `manifest.json`, runs the project checks, creates a release commit when needed, creates an annotated tag, and atomically pushes the branch and tag to `origin`.
+
+The tag starts the GitHub Actions release workflow, which verifies that the tag matches the manifest, reruns the tests, and publishes a GitHub Release with generated notes.
 
 ## Safety
 
