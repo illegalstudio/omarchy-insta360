@@ -149,8 +149,7 @@ function parseResolutionValue(value) {
   }
 }
 
-function statusText(snapshotLoaded, installed, cameraFound, state, installing) {
-  if (installing) return "Installing linkctl with mise"
+function statusText(snapshotLoaded, installed, cameraFound, state) {
   if (!snapshotLoaded) return "Checking camera"
   if (!installed) return "linkctl is not installed"
   if (!cameraFound) return "No Insta360 Link detected"

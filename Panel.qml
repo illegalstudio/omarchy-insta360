@@ -38,14 +38,13 @@ Panel {
   readonly property string previewError: previewLoader.item
     ? String(previewLoader.item.errorString || "") : ""
   readonly property bool cameraUsable: backend.installed && backend.cameraFound
-  readonly property bool canMove: cameraUsable && !backend.installing
-    && (backend.active || previewRunning)
-  readonly property bool canReadCamera: cameraUsable && !backend.installing
+  readonly property bool canMove: cameraUsable && (backend.active || previewRunning)
+  readonly property bool canReadCamera: cameraUsable
   readonly property bool canDragPreview: previewRunning && canMove
     && !backend.trackingEnabled
   readonly property string statusText: Model.statusText(
     backend.loaded, backend.installed, backend.cameraFound,
-    backend.cameraState, backend.installing)
+    backend.cameraState)
   readonly property string issueText: {
     if (backend.lastError !== "") return backend.lastError
     if (backend.snapshotError !== "") return backend.snapshotError
@@ -54,8 +53,7 @@ Panel {
   }
   readonly property string previewMessage: {
     if (!backend.loaded) return "Checking for Insta360 Link"
-    if (!backend.installed) return backend.installing
-      ? "Installing linkctl with mise" : "linkctl is required"
+    if (!backend.installed) return "linkctl is required"
     if (!backend.cameraFound) return "Connect an Insta360 Link camera"
     if (!previewWanted) return "Preview paused"
     if (previewSuspended) return "Applying video format"
@@ -130,7 +128,7 @@ Panel {
 
   function setResolution(value) {
     var parsed = Model.parseResolutionValue(value)
-    if (!parsed || backend.installing) return
+    if (!parsed || !cameraUsable) return
     pendingResolution = parsed
     previewSuspended = true
     resolutionReleaseTimer.restart()
@@ -154,7 +152,7 @@ Panel {
     backend.panelOpen = opened
     if (opened) {
       resetPanel()
-      backend.ensureReady()
+      backend.refresh()
       Qt.callLater(function() { keyCatcher.forceActiveFocus() })
     } else {
       previewSuspended = false
@@ -180,7 +178,6 @@ Panel {
     }
     function onActionFinished(kind, ok) {
       if (kind === "resolution") previewRestartTimer.restart()
-      if (kind === "install" && ok) backend.refresh()
     }
   }
 
@@ -633,22 +630,31 @@ Panel {
             Notice {
               width: parent.width
               tone: root.urgent
-              text: backend.miseAvailable
-                ? (backend.installing
-                  ? "Installing the latest linkctl release with mise."
-                  : "linkctl is missing. This plugin can install it with mise using the official GitHub release channel.")
-                : "linkctl and mise are both missing. Install mise, or install linkctl manually from github.com/illegalstudio/linkctl."
+              text: "linkctl is required. Install it manually using the official instructions, then click Check again."
             }
 
-            Button {
-              visible: backend.miseAvailable && !backend.installing
-              text: backend.installAttempted ? "Retry installation" : "Install linkctl"
-              iconText: "󰇚"
-              bordered: true
-              foreground: root.foreground
-              fontFamily: root.fontFamily
-              focusable: false
-              onClicked: backend.installLinkctl()
+            RowLayout {
+              spacing: Style.space(8)
+
+              Button {
+                text: "Installation instructions"
+                bordered: true
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                focusable: false
+                onClicked: Qt.openUrlExternally("https://github.com/illegalstudio/linkctl#installation")
+              }
+
+              Button {
+                text: "Check again"
+                iconText: "󰑐"
+                bordered: true
+                foreground: root.foreground
+                fontFamily: root.fontFamily
+                focusable: false
+                enabled: !backend.busy
+                onClicked: backend.refresh()
+              }
             }
           }
 
@@ -1161,8 +1167,7 @@ Panel {
 
     ToggleSwitch {
       checked: toggleRow.checked
-      busy: backend.installing
-        || (backend.acting && backend.currentAction === "tracking")
+      busy: backend.acting && backend.currentAction === "tracking"
       enabled: toggleRow.enabled
       foreground: root.foreground
       Layout.alignment: Qt.AlignVCenter

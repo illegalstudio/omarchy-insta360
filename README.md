@@ -31,6 +31,8 @@
 
 ## Install
 
+Install [linkctl](https://github.com/illegalstudio/linkctl#installation) manually first, then add the plugin:
+
 ```bash
 omarchy plugin add https://github.com/illegalstudio/omarchy-insta360.git --enable
 ```
@@ -48,7 +50,7 @@ omarchy plugin disable illegalstudio.omarchy-insta360
 omarchy plugin remove illegalstudio.omarchy-insta360
 ```
 
-Removing the plugin does not remove `linkctl`. If the plugin installed it through mise and you no longer need it, remove it separately with `mise unuse -g github:illegalstudio/linkctl`.
+Removing the plugin does not remove `linkctl`. If you installed it through mise and no longer need it, remove it separately with `mise unuse -g github:illegalstudio/linkctl`.
 
 ## Using the widget
 
@@ -73,19 +75,16 @@ The embedded preview uses the resolution and frame rate currently reported by `l
 
 ## linkctl setup
 
-Every camera operation goes through [linkctl](https://github.com/illegalstudio/linkctl). The plugin searches `PATH`, mise, and the standard mise installation directory.
+Every camera operation goes through [linkctl](https://github.com/illegalstudio/linkctl), which must be installed manually before using the camera controls. Follow its [official installation instructions](https://github.com/illegalstudio/linkctl#installation) to choose and install a release.
 
-When `linkctl` is missing and mise is available, the panel offers an explicit installation button that runs:
+The plugin discovers existing installations through `PATH`, `mise which linkctl`, and the standard mise installation directory. It does not download, install, or update dependencies, or change mise's security settings. If mise rejects a release as too recent, wait until it satisfies the configured minimum release age.
 
-```bash
-mise use -g github:illegalstudio/linkctl@latest
-```
-
-Automatic installation on panel open is available as an opt-in setting and is disabled by default. If mise is unavailable, install `linkctl` manually before opening the panel.
+When `linkctl` is missing, the panel shows a notice with **Installation instructions** and **Check again** buttons. After installing it, click **Check again** or reopen the panel. Existing installations continue to work, including those installed through mise by earlier plugin versions. The former `autoInstallLinkctl` setting is no longer used, even if it remains in your saved widget settings.
 
 ## Requirements
 
 - Omarchy 4 or newer with the current shell plugin system.
+- A manually installed [linkctl](https://github.com/illegalstudio/linkctl#installation) executable.
 - An Insta360 Link webcam supported by `linkctl`.
 - Qt Multimedia, included with current Omarchy installations.
 - Camera device read and write permission for the active desktop session.
@@ -96,7 +95,6 @@ Widget settings are stored by Omarchy in `~/.config/omarchy/shell.json`.
 
 | Setting | Default | Purpose |
 | --- | ---: | --- |
-| `autoInstallLinkctl` | `false` | After explicit opt-in, install `linkctl` through mise when it is missing. |
 | `previewEnabled` | `true` | Start the embedded preview when the panel opens. |
 | `moveStepDegrees` | `5` | Degrees moved by the directional buttons and keyboard shortcuts. |
 | `refreshIntervalSec` | `10` | Interval for background camera state refreshes. |

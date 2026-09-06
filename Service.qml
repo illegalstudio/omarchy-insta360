@@ -15,7 +15,6 @@ Item {
 
   property bool loaded: false
   property bool installed: false
-  property bool miseAvailable: false
   property bool cameraFound: false
   property string linkctlPath: ""
   property string linkctlVersion: ""
@@ -32,19 +31,16 @@ Item {
   property string snapshotError: ""
   property string lastError: ""
   property string actionStatus: ""
-  property bool installAttempted: false
   property string currentAction: ""
   property var _actionQueue: []
 
   readonly property bool refreshing: snapshotProcess.running
-  readonly property bool installing: installProcess.running
   readonly property bool acting: actionProcess.running
-  readonly property bool actionBusy: installing || acting || _actionQueue.length > 0
+  readonly property bool actionBusy: acting || _actionQueue.length > 0
   readonly property bool busy: refreshing || actionBusy
   readonly property string cameraState: status && status.state ? String(status.state) : "inactive"
   readonly property bool active: cameraState === "active"
   readonly property bool trackingEnabled: tracking && tracking.tracking === true
-  readonly property bool autoInstallLinkctl: settingBool("autoInstallLinkctl", false)
   readonly property int refreshIntervalSec: settingInt("refreshIntervalSec", 10, 2, 60)
   readonly property int moveStepDegrees: settingInt("moveStepDegrees", 5, 1, 45)
 
@@ -75,8 +71,6 @@ Item {
     else if (which === "snapshotError") _snapshotErrorOutput = (_snapshotErrorOutput + text).substring(0, limit)
     else if (which === "action") _actionOutput = (_actionOutput + text).substring(0, limit)
     else if (which === "actionError") _actionErrorOutput = (_actionErrorOutput + text).substring(0, limit)
-    else if (which === "install") _installOutput = (_installOutput + text).substring(0, limit)
-    else if (which === "installError") _installErrorOutput = (_installErrorOutput + text).substring(0, limit)
   }
 
   function _payload(output, errorOutput) {
@@ -102,27 +96,10 @@ Item {
   }
 
   function refresh() {
-    if (snapshotProcess.running || installProcess.running || actionProcess.running
+    if (snapshotProcess.running || actionProcess.running
         || _actionQueue.length > 0) return
     snapshotProcess.command = _snapshotCommand()
     snapshotProcess.running = true
-  }
-
-  function ensureReady() {
-    if (loaded && !installed && autoInstallLinkctl && miseAvailable && !installAttempted) {
-      installLinkctl()
-      return
-    }
-    refresh()
-  }
-
-  function installLinkctl() {
-    if (snapshotProcess.running || installProcess.running || actionProcess.running) return
-    installAttempted = true
-    lastError = ""
-    actionStatus = "Installing linkctl with mise"
-    installProcess.command = [bridgePath, "install"]
-    installProcess.running = true
   }
 
   function selectDevice(path) {
@@ -138,7 +115,7 @@ Item {
   }
 
   function runAction(kind, args) {
-    if (installProcess.running) return false
+    if (!installed) return false
     var request = {
       kind: String(kind),
       args: Array.isArray(args) ? args.slice() : []
@@ -177,7 +154,7 @@ Item {
   }
 
   function _startNextAction() {
-    if (snapshotProcess.running || installProcess.running || actionProcess.running
+    if (snapshotProcess.running || actionProcess.running
         || _actionQueue.length === 0) return
     var queue = _actionQueue.slice()
     var request = queue.shift()
@@ -216,7 +193,6 @@ Item {
     }
 
     installed = payload.installed === true
-    miseAvailable = payload.miseAvailable === true
     cameraFound = payload.cameraFound === true
     linkctlPath = String(payload.path || "")
     linkctlVersion = String(payload.version || "")
@@ -234,17 +210,12 @@ Item {
     snapshotError = payload.ok === false
       ? _cleanError(payload.error, "Could not read camera state") : ""
     loaded = true
-
-    if (!installed && panelOpen && autoInstallLinkctl && miseAvailable && !installAttempted)
-      Qt.callLater(installLinkctl)
   }
 
   property string _snapshotOutput: ""
   property string _snapshotErrorOutput: ""
   property string _actionOutput: ""
   property string _actionErrorOutput: ""
-  property string _installOutput: ""
-  property string _installErrorOutput: ""
 
   Process {
     id: snapshotProcess
@@ -303,39 +274,6 @@ Item {
       root.actionFinished(kind, ok)
       if (root._actionQueue.length > 0) Qt.callLater(root._startNextAction)
       else refreshDelay.restart()
-    }
-  }
-
-  Process {
-    id: installProcess
-    running: false
-    command: []
-    stdout: SplitParser {
-      splitMarker: ""
-      onRead: function(data) { root._append("install", data) }
-    }
-    stderr: SplitParser {
-      splitMarker: ""
-      onRead: function(data) { root._append("installError", data) }
-    }
-    onStarted: {
-      root._installOutput = ""
-      root._installErrorOutput = ""
-    }
-    onExited: function(exitCode) {
-      var payload = root._payload(root._installOutput, root._installErrorOutput)
-      var ok = payload && payload.ok === true && payload.installed === true
-      root.actionStatus = ""
-      root.lastError = ok ? "" : root._cleanError(
-        payload ? payload.error : root._installErrorOutput,
-        "mise could not install linkctl")
-      if (ok) {
-        root.installed = true
-        root.linkctlPath = String(payload.path || "")
-        root.linkctlVersion = String(payload.version || "")
-      }
-      root.actionFinished("install", ok && exitCode === 0)
-      refreshDelay.restart()
     }
   }
 

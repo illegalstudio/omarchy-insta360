@@ -85,7 +85,7 @@ def locate_linkctl() -> str | None:
     return None
 
 
-def run_process(argv: list[str], timeout: int = 12, env: dict[str, str] | None = None) -> dict[str, Any]:
+def run_process(argv: list[str], timeout: int = 12) -> dict[str, Any]:
     try:
         result = subprocess.run(
             argv,
@@ -93,7 +93,6 @@ def run_process(argv: list[str], timeout: int = 12, env: dict[str, str] | None =
             capture_output=True,
             text=True,
             timeout=timeout,
-            env=env,
         )
     except subprocess.TimeoutExpired:
         return {"ok": False, "exitCode": None, "error": "Command timed out"}
@@ -153,7 +152,6 @@ def probe() -> dict[str, Any]:
         "installed": binary is not None,
         "path": binary or "",
         "version": version_of(binary) if binary else "",
-        "miseAvailable": locate_mise() is not None,
     }
 
 
@@ -172,7 +170,6 @@ def snapshot(requested_device: str) -> dict[str, Any]:
             "installed": False,
             "path": "",
             "version": "",
-            "miseAvailable": locate_mise() is not None,
             "cameraFound": False,
             "devices": [],
         }
@@ -186,7 +183,6 @@ def snapshot(requested_device: str) -> dict[str, Any]:
             "installed": True,
             "path": binary,
             "version": version_of(binary),
-            "miseAvailable": locate_mise() is not None,
             "cameraFound": False,
             "devices": [],
             "error": device_result.get("error", "Could not list cameras"),
@@ -199,7 +195,6 @@ def snapshot(requested_device: str) -> dict[str, Any]:
         "installed": True,
         "path": binary,
         "version": version_of(binary),
-        "miseAvailable": locate_mise() is not None,
         "cameraFound": bool(selected),
         "devices": devices,
         "selectedDevice": selected,
@@ -314,54 +309,6 @@ def action(device: str, tokens: list[str]) -> dict[str, Any]:
     return result
 
 
-def install() -> dict[str, Any]:
-    existing = locate_linkctl()
-    if existing:
-        return {
-            "ok": True,
-            "installed": True,
-            "path": existing,
-            "version": version_of(existing),
-            "alreadyInstalled": True,
-        }
-
-    mise = locate_mise()
-    if not mise:
-        return {
-            "ok": False,
-            "installed": False,
-            "error": "mise is not installed; install linkctl manually from its GitHub releases",
-            "exitCode": 127,
-        }
-
-    env = os.environ.copy()
-    env["MISE_YES"] = "1"
-    argv = [mise, "use", "-g", "github:illegalstudio/linkctl@latest"]
-    result = run_process(argv, timeout=180, env=env)
-    message = str(result.get("error", ""))
-    if not result["ok"] and any(term in message.lower() for term in (
-        "minimum_release_age", "date filter", "no versions found"
-    )):
-        env["MISE_MINIMUM_RELEASE_AGE"] = "0"
-        result = run_process(argv, timeout=180, env=env)
-
-    binary = locate_linkctl()
-    if result["ok"] and binary:
-        return {
-            "ok": True,
-            "installed": True,
-            "path": binary,
-            "version": version_of(binary),
-            "alreadyInstalled": False,
-        }
-    return {
-        "ok": False,
-        "installed": False,
-        "error": result.get("error", "mise did not install linkctl"),
-        "exitCode": result.get("exitCode"),
-    }
-
-
 def parse_device(args: list[str]) -> tuple[str, list[str]]:
     if len(args) >= 2 and args[0] == "--device":
         return args[1], args[2:]
@@ -372,7 +319,7 @@ def main(argv: list[str]) -> int:
     if len(argv) < 2 or argv[1] in {"-h", "--help", "help"}:
         return emit({
             "ok": True,
-            "usage": "linkctl_bridge.py probe|snapshot|install|action",
+            "usage": "linkctl_bridge.py probe|snapshot|action",
         })
 
     command = argv[1]
@@ -384,8 +331,6 @@ def main(argv: list[str]) -> int:
         if rest:
             return emit({"ok": False, "error": "Unexpected snapshot arguments"})
         return emit(snapshot(device))
-    if command == "install" and not args:
-        return emit(install())
     if command == "action":
         device, rest = parse_device(args)
         if rest and rest[0] == "--":

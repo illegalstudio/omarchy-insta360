@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -123,32 +124,75 @@ class BridgeTest(unittest.TestCase):
         )
         self.assertFalse(invalid["ok"])
 
-    def test_install_uses_the_official_mise_channel(self) -> None:
+    def test_install_commands_are_rejected_without_starting_a_process(self) -> None:
+        for args in (["install"], ["install", "--device", "/dev/video8"], ["action", "--", "install"]):
+            with (
+                self.subTest(args=args),
+                mock.patch.object(BRIDGE.subprocess, "run") as process,
+                mock.patch("sys.stdout", new_callable=io.StringIO) as output,
+            ):
+                exit_code = BRIDGE.main([str(BRIDGE_PATH), *args])
+                result = json.loads(output.getvalue())
+                self.assertEqual(exit_code, 1)
+                self.assertFalse(result["ok"])
+                process.assert_not_called()
+
+    def test_missing_dependency_only_performs_read_only_discovery(self) -> None:
+        for mise in (None, "/usr/bin/mise"):
+            for args in (["probe"], ["snapshot"], ["action", "--", "center"]):
+                with (
+                    self.subTest(mise=mise, args=args),
+                    mock.patch.dict(os.environ, {"XDG_DATA_HOME": self.temp_dir.name}, clear=True),
+                    mock.patch.object(BRIDGE.shutil, "which", return_value=None),
+                    mock.patch.object(BRIDGE, "locate_mise", return_value=mise),
+                    mock.patch.object(
+                        BRIDGE.subprocess,
+                        "run",
+                        return_value=mock.Mock(returncode=1, stdout="", stderr="linkctl is missing"),
+                    ) as process,
+                    mock.patch("sys.stdout", new_callable=io.StringIO) as output,
+                ):
+                    exit_code = BRIDGE.main([str(BRIDGE_PATH), *args])
+                    result = json.loads(output.getvalue())
+                    if args[0] == "action":
+                        self.assertEqual(exit_code, 1)
+                        self.assertEqual(result["exitCode"], 127)
+                    else:
+                        self.assertEqual(exit_code, 0)
+                        self.assertFalse(result["installed"])
+                        if args[0] == "snapshot":
+                            self.assertFalse(result["cameraFound"])
+                    if mise:
+                        process.assert_called_once_with(
+                            [mise, "which", "linkctl"],
+                            check=False,
+                            capture_output=True,
+                            text=True,
+                            timeout=8,
+                        )
+                    else:
+                        process.assert_not_called()
+
+    def test_existing_mise_installation_is_still_detected(self) -> None:
         with (
-            mock.patch.object(
-                BRIDGE,
-                "locate_linkctl",
-                side_effect=[None, str(self.binary)],
-            ),
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(BRIDGE.shutil, "which", return_value=None),
             mock.patch.object(BRIDGE, "locate_mise", return_value="/usr/bin/mise"),
             mock.patch.object(
-                BRIDGE,
-                "run_process",
-                return_value={"ok": True, "exitCode": 0, "payload": None},
+                BRIDGE.subprocess,
+                "run",
+                return_value=mock.Mock(returncode=0, stdout=str(self.binary) + "\n"),
             ) as process,
-            mock.patch.object(BRIDGE, "version_of", return_value="linkctl 9.9.9"),
         ):
-            result = BRIDGE.install()
+            result = BRIDGE.locate_linkctl()
 
-        self.assertTrue(result["ok"])
-        self.assertEqual(
-            process.call_args.args[0],
-            [
-                "/usr/bin/mise",
-                "use",
-                "-g",
-                "github:illegalstudio/linkctl@latest",
-            ],
+        self.assertEqual(result, str(self.binary))
+        process.assert_called_once_with(
+            ["/usr/bin/mise", "which", "linkctl"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=8,
         )
 
 
